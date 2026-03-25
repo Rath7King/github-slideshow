@@ -1,28 +1,25 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/ui/model/json/JSONModel",
-    "sap/viz/ui5/controls/VizFrame",                  // ← ADD THIS
-    "sap/viz/ui5/controls/common/feeds/FeedItem"
-], (Controller, JSONModel, VizFrame, FeedItem) => {
+    "sap/viz/ui5/controls/VizFrame",
+    "sap/viz/ui5/controls/common/feeds/FeedItem",
+    "sap/viz/ui5/data/FlattenedDataset"
+], function(Controller, JSONModel, VizFrame, FeedItem, FlattenedDataset) {
     "use strict";
-
-    const COMMON_PROPS = {
-        legend:       { visible: false },
-        categoryAxis: { title: { visible: false } },
-        valueAxis:    { title: { visible: false } },
-        title:        { visible: false }
-    };
 
     return Controller.extend("project1.controller.View1", {
 
-        onInit() {
+        onInit: function() {
             this._initModel();
-            // ← Delay chart setup so VizFrames are fully rendered in DOM
-            setTimeout(() => this._configureCharts(), 0);
         },
 
-        _initModel() {
-            const oModel = new JSONModel({
+        onAfterRendering: function() {
+            // Charts are guaranteed to exist in DOM here
+            this._configureCharts();
+        },
+
+        _initModel: function() {
+            var oModel = new JSONModel({
                 createdDate: "CREATEDDAY: Dec 28, 2025 5:00...",
                 kpi: {
                     uploaded:  "71",
@@ -72,7 +69,7 @@ sap.ui.define([
             this.getView().setModel(oModel);
         },
 
-        _configureCharts() {
+        _configureCharts: function() {
             this._setupModuleChart();
             this._setupPieChart();
             this._setupBarChart("monthChart",   ["#2196a8", "#4db8a4", "#7ec8c8"]);
@@ -80,25 +77,42 @@ sap.ui.define([
             this._setupBarChart("yearChart",     ["#4db8a4", "#2196a8", "#1f3d7a"]);
         },
 
-        _setupModuleChart() {
-            const oChart = this.byId("moduleBarChart");
-            if (!oChart) { return; }
+        _setupModuleChart: function() {
+            var oChart = this.byId("moduleBarChart");
+            if (!oChart) {
+                console.warn("moduleBarChart not found");
+                return;
+            }
+
+            // Remove all existing feeds first
+            oChart.destroyFeeds();
+
+            oChart.setVizType("stacked_column");
+
             oChart.setVizProperties({
-                ...COMMON_PROPS,
+                legend:       { visible: false },
+                categoryAxis: { title: { visible: false } },
+                valueAxis:    { title: { visible: false } },
+                title:        { visible: false },
                 plotArea: {
                     colorPalette: ["#1f3d7a", "#4db8a4", "#7ec8a0"],
                     dataLabel: { visible: true, formatString: "#" }
                 }
             });
-            oChart.setFeeds([
-                new FeedItem({ uid: "valueAxis",    type: "Measure",   values: ["Approved", "Pending", "Uploaded"] }),
-                new FeedItem({ uid: "categoryAxis", type: "Dimension", values: ["Module"] })
-            ]);
+
+            oChart.addFeed(new FeedItem({ uid: "valueAxis",    type: "Measure",   values: ["Approved", "Pending", "Uploaded"] }));
+            oChart.addFeed(new FeedItem({ uid: "categoryAxis", type: "Dimension", values: ["Module"] }));
         },
 
-        _setupPieChart() {
-            const oChart = this.byId("pieChart");
-            if (!oChart) { return; }
+        _setupPieChart: function() {
+            var oChart = this.byId("pieChart");
+            if (!oChart) {
+                console.warn("pieChart not found");
+                return;
+            }
+
+            oChart.destroyFeeds();
+
             oChart.setVizProperties({
                 legend:   { visible: false },
                 title:    { visible: false },
@@ -107,26 +121,34 @@ sap.ui.define([
                     dataLabel: { visible: true, type: "percentage" }
                 }
             });
-            oChart.setFeeds([
-                new FeedItem({ uid: "size",  type: "Measure",   values: ["Count"] }),
-                new FeedItem({ uid: "color", type: "Dimension", values: ["Module"] })
-            ]);
+
+            oChart.addFeed(new FeedItem({ uid: "size",  type: "Measure",   values: ["Count"] }));
+            oChart.addFeed(new FeedItem({ uid: "color", type: "Dimension", values: ["Module"] }));
         },
 
-        _setupBarChart(sId, aColors) {
-            const oChart = this.byId(sId);
-            if (!oChart) { return; }
+        _setupBarChart: function(sId, aColors) {
+            var oChart = this.byId(sId);
+            if (!oChart) {
+                console.warn(sId + " not found");
+                return;
+            }
+
+            oChart.destroyFeeds();
+
             oChart.setVizProperties({
-                ...COMMON_PROPS,
+                legend:       { visible: false },
+                categoryAxis: { title: { visible: false } },
+                valueAxis:    { title: { visible: false } },
+                title:        { visible: false },
                 plotArea: {
                     colorPalette: aColors,
                     dataLabel: { visible: true }
                 }
             });
-            oChart.setFeeds([
-                new FeedItem({ uid: "valueAxis",    type: "Measure",   values: ["Usage"] }),
-                new FeedItem({ uid: "categoryAxis", type: "Dimension", values: ["Template"] })
-            ]);
+
+            oChart.addFeed(new FeedItem({ uid: "valueAxis",    type: "Measure",   values: ["Usage"] }));
+            oChart.addFeed(new FeedItem({ uid: "categoryAxis", type: "Dimension", values: ["Template"] }));
         }
+
     });
 });
